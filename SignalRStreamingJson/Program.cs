@@ -103,7 +103,8 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 
-app.MapHub<MockHub>("/chathub");
+app.MapHub<PublicChatHub>("/chathub");
+app.MapHub<PrivateChatHub>("/privatechathub");
 
 app.MapControllers();
 

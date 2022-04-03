@@ -30,7 +30,7 @@
                             @onkeyup="HandleInput"
                             class="form-control">
                     <button class="btn btn-primary form-group-append"
-                            @onclick="Send">Send</button>
+                            @onclick="SendPublic">Send</button>
                 </div>
             </div>
             <div class="container-fluid">
@@ -44,7 +44,7 @@
                             @onkeyup="HandleInput"
                             class="form-control">
                     <button class="btn btn-primary form-group-append"
-                            @onclick="PrivateSend">Send</button>
+                            @onclick="PrivatSend">Send</button>
                 </div>
             </div>
      </div>
@@ -57,22 +57,27 @@
 
 
 @code {
-    private HubConnection? hubConnection;
+    private HubConnection? connPublicChat;
+    private HubConnection? connPrivatChat;
     private string messages = string.Empty;
     private string username = string.Empty;
     private string message = string.Empty;
-
-    private HubConnectionBuilder HubConnection = new HubConnectionBuilder();
-
+    
 
     protected override async Task OnInitializedAsync()
     {
-        hubConnection = new HubConnectionBuilder()
+        connPublicChat = new HubConnectionBuilder()
             .WithUrl("https://localhost:44318/chathub")
             .Build();
-           username = await GetUsernameClaim();
 
-        hubConnection.On<string, string>("Ayooo", (user, message) =>
+        connPrivatChat = new HubConnectionBuilder()
+            .WithUrl("https://localhost:44318/privatechathub")
+            .Build();
+
+
+        username = await GetUsernameClaim();
+
+        connPublicChat.On<string, string>("Ayooo", (user, message) =>
           {
 
               var msg = $"{(string.IsNullOrEmpty(user) ? "" : user + ": ")} {message}";
@@ -80,14 +85,31 @@
               StateHasChanged();
           });
 
-        await hubConnection.StartAsync();
+         connPrivatChat.On<string, string>("InitializeChat", (connectionid, message) =>
+          {
+
+              var msg = $"{(string.IsNullOrEmpty(connectionid) ? "" : connectionid + ": ")} {message}";
+              messages += msg + "\n";
+              StateHasChanged();
+          });
+
+        await connPublicChat.StartAsync();
     }
 
-    private async Task Send()
+    private async Task SendPublic()
     {
-        if(hubConnection != null)
+        if(connPublicChat != null)
         {
-            await hubConnection.SendAsync("AddMessageToChat", username, message);
+            await connPublicChat.SendAsync("AddMessageToChat", username, message);
+            message = string.Empty;
+        }
+    }
+
+    private async Task PrivatSend()
+    {
+        if(connPrivatChat != null)
+        {
+            await connPrivatChat.SendAsync("AddMessageToChat", username, message);
             message = string.Empty;
         }
     }
@@ -96,18 +118,24 @@
     {
         if(args.Key.Equals("Enter"))
         {
-            await Send();
+            await SendPublic();
+            await PrivatSend();
 
         }
     }
 
-    public bool IsConnnected => hubConnection?.State == HubConnectionState.Connected;
+    public bool IsConnnected => connPublicChat?.State == HubConnectionState.Connected;
 
     public async ValueTask DisposeAsync()
     {
-        if(hubConnection != null)
+        if(connPublicChat != null)
         {
-            await hubConnection.DisposeAsync();
+            await connPublicChat.DisposeAsync();
+        }
+
+        if(connPrivatChat != null)
+        {
+            await connPrivatChat.DisposeAsync();
         }
     }
 
