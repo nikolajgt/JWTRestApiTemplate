@@ -1,8 +1,8 @@
-﻿using SignalRStreaming.BL.Models;
-using SignalRStreamingJson.Models.JWT;
+﻿
+using SignalRStreaming.UI.Models.JWT;
 using System.ComponentModel.DataAnnotations;
 
-namespace SignalRStreamingJson.Models
+namespace SignalRStreaming.UI.Models
 {
     public class User
     {

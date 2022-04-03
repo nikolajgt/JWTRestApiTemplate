@@ -1,14 +1,19 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-
+using Microsoft.Owin;
+using Owin;
+using SignalRStreaming.BL.Hubs;
+using SignalRStreamingJson.Hubs;
 using SignalRStreamingJson.Interfaces;
 using SignalRStreamingJson.Models;
 using SignalRStreamingJson.Repositorys;
 using SignalRStreamingJson.Services;
 using Swashbuckle.AspNetCore.Filters;
 using System.Text;
+
 
 var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
@@ -70,8 +75,17 @@ builder.Services.AddAuthentication(x =>
     });
 
 builder.Services.AddSignalR();
+builder.Services.AddResponseCompression(opt =>
+    opt.MimeTypes = ResponseCompressionDefaults
+    .MimeTypes
+    .Concat(new[] { "application/octet-stream"} )
+);
+
+
+
 
 var app = builder.Build();
+
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -80,11 +94,16 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
+app.UseResponseCompression();
+
 app.UseHttpsRedirection();
 
 app.UseAuthentication();
 
 app.UseAuthorization();
+
+
+app.MapHub<MockHub>("/chathub");
 
 app.MapControllers();
 

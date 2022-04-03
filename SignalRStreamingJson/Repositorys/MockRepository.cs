@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using SignalRStreaming.BL.Models;
 using SignalRStreamingJson.Interfaces;
 using SignalRStreamingJson.Models;
 
@@ -28,10 +29,32 @@ namespace SignalRStreamingJson.Repositorys
             }
         }
 
+        public async Task<bool> AddFriendAsync(ChatFriends chatfriend)
+        {
+            try
+            {
+                await _db.ChatFriends.AddAsync(chatfriend);
+                return (await _db.SaveChangesAsync()) > 0;
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+        }
+
         //Get
         public async Task<User> GetUserAsync(string id)
         {
             var response = await _db.Users.FirstOrDefaultAsync(x => x.UserID == id);
+            if (response == null)
+                return null;
+
+            return response;
+        }
+
+        public async Task<ChatFriends> GetChatFriendsAsync(int id)
+        {
+            var response = await _db.ChatFriends.FirstOrDefaultAsync(x => x.ID == id);
             if (response == null)
                 return null;
 
@@ -48,6 +71,19 @@ namespace SignalRStreamingJson.Repositorys
                 return (await _db.SaveChangesAsync()) > 0;
             }
             catch (Exception e)
+            {
+                return false;
+            }
+        }
+
+        public async Task<bool> UpdateMessagesAsync(ChatFriends chat)
+        {
+            try
+            {
+                _db.ChatFriends.Update(chat);
+                return (await _db.SaveChangesAsync()) > 0;
+            }
+            catch(Exception e)
             {
                 return false;
             }

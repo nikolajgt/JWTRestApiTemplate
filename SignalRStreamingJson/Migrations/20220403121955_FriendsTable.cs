@@ -3,12 +3,26 @@ using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
-namespace SignalRStreamingJson.Migrations
+namespace SignalRStreaming.BL.Migrations
 {
-    public partial class Initial : Migration
+    public partial class FriendsTable : Migration
     {
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.CreateTable(
+                name: "MockTable",
+                columns: table => new
+                {
+                    ID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    AnimalName = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    LatinName = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MockTable", x => x.ID);
+                });
+
             migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
@@ -24,6 +38,30 @@ namespace SignalRStreamingJson.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Users", x => x.UserID);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "ChatFriends",
+                columns: table => new
+                {
+                    ID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserID = table.Column<string>(type: "nvarchar(450)", nullable: true),
+                    UserAddedUserID = table.Column<string>(type: "nvarchar(450)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ChatFriends", x => x.ID);
+                    table.ForeignKey(
+                        name: "FK_ChatFriends_Users_UserAddedUserID",
+                        column: x => x.UserAddedUserID,
+                        principalTable: "Users",
+                        principalColumn: "UserID");
+                    table.ForeignKey(
+                        name: "FK_ChatFriends_Users_UserID",
+                        column: x => x.UserID,
+                        principalTable: "Users",
+                        principalColumn: "UserID");
                 });
 
             migrationBuilder.CreateTable(
@@ -53,6 +91,16 @@ namespace SignalRStreamingJson.Migrations
                 });
 
             migrationBuilder.CreateIndex(
+                name: "IX_ChatFriends_UserAddedUserID",
+                table: "ChatFriends",
+                column: "UserAddedUserID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ChatFriends_UserID",
+                table: "ChatFriends",
+                column: "UserID");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_RefreshToken_UserID",
                 table: "RefreshToken",
                 column: "UserID");
@@ -60,6 +108,12 @@ namespace SignalRStreamingJson.Migrations
 
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropTable(
+                name: "ChatFriends");
+
+            migrationBuilder.DropTable(
+                name: "MockTable");
+
             migrationBuilder.DropTable(
                 name: "RefreshToken");
 

@@ -1,0 +1,44 @@
+﻿@inject IJSRuntime JS
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+@page "/stockticker"
+
+<PageTitle>Index</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+
+    <h1>ASP.NET SignalR Stock Ticker Sample</h1>
+
+    <button id="openMarket" onclick="@OpenMarket" class="btn btn-primary">Open market</button>
+
+    <h2>Live Stock Table</h2>
+    <div id="stockTable">
+        <table border="1">
+            <thead>
+                <tr><th>Symbol</th><th>Price</th><th>Open</th><th>Change</th><th>%</th></tr>
+            </thead>
+            <tbody>
+                <tr class="loading"><td colspan="5">loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+        <SurveyPrompt Title="How is Blazor working for you?" />
+    </Authorized>
+    <NotAuthorized>
+        <span>Not authorized</span>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+@code {
+
+
+    private async Task OpenMarket()
+    {
+        await JS.InvokeVoidAsync("init", "virker");
+    }
+}
+
+
+

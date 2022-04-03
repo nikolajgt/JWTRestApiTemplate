@@ -1,0 +1,39 @@
+﻿@using SignalRStreaming.UI.Models.JWT
+@inject NavigationManager NavigationManager
+@inject ILocalStorageService LocalStorage
+@inject AuthenticationStateProvider AuthStateProvider
+@inject HttpClient Http
+
+<AuthorizeView>
+    <Authorized>
+        <button @onclick="Logout" class="btn btn-danger">Logout</button>
+    </Authorized>
+    <NotAuthorized>
+        <button @onclick="Login" class="btn btn-primary">Login</button>
+    </NotAuthorized>
+</AuthorizeView>
+
+@code {
+    string baseEndpoint = "https://localhost:44318";
+    string revokeTokenEndpoint = "/api/Test/Revoke-token";
+
+
+
+    void Login()
+    {
+        NavigationManager.NavigateTo("login");
+    }
+
+    async Task Logout()
+    {
+        var refrehToken = await LocalStorage.GetItemAsync<string>("Refresh-token");
+        RevokeTokenRequest token = new RevokeTokenRequest();
+        token.Token = refrehToken;
+
+        await Http.PostAsJsonAsync(baseEndpoint + revokeTokenEndpoint, token);
+
+        await LocalStorage.RemoveItemAsync("Token");
+        await LocalStorage.RemoveItemAsync("Refresh-token");
+        await AuthStateProvider.GetAuthenticationStateAsync();
+    }
+}

@@ -1,0 +1,120 @@
+﻿@page "/chat"
+@inject NavigationManager NavigationManager
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+@attribute [Microsoft.AspNetCore.Authorization.Authorize]
+<PageTitle>Chat</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+        <div class="d-flex flex-row" >
+            <div class="d-flex flex-column flex-shrink-0 p-3 text-white bg-dark">
+                <a href="" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-white text-decoration-none">
+                    <span class="fs-4"></span>
+                </a>
+                <ul class="nav nav-pills flex-column mb-auto">
+                    <li class="nav-item bg-white" style="min-width:100px">
+                        <p class="text-black">Shamasdasdse</p>
+                    </li>
+                </ul>
+            </div>
+            <div class="container-fluid">
+                <label>Public Messages</label>
+                <textarea style="width: 100%; height: 500px;">
+                    @messages
+                </textarea>
+                <div class="input-group">
+                    <input @bind-value="message"
+                            @bind-value:event="oninput"
+                            @onkeyup="HandleInput"
+                            class="form-control">
+                    <button class="btn btn-primary form-group-append"
+                            @onclick="Send">Send</button>
+                </div>
+            </div>
+            <div class="container-fluid">
+                <label>Private Messages</label>
+                <textarea style="width: 100%; height: 500px;">
+                    @messages
+                </textarea>
+                <div class="input-group">
+                    <input @bind-value="message"
+                            @bind-value:event="oninput"
+                            @onkeyup="HandleInput"
+                            class="form-control">
+                    <button class="btn btn-primary form-group-append"
+                            @onclick="PrivateSend">Send</button>
+                </div>
+            </div>
+     </div>
+    </Authorized>
+    <NotAuthorized>
+        <span>Not authorized</span>
+    </NotAuthorized>
+</AuthorizeView>
+
+
+
+@code {
+    private HubConnection? hubConnection;
+    private string messages = string.Empty;
+    private string username = string.Empty;
+    private string message = string.Empty;
+
+    private HubConnectionBuilder HubConnection = new HubConnectionBuilder();
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+            .WithUrl("https://localhost:44318/chathub")
+            .Build();
+           username = await GetUsernameClaim();
+
+        hubConnection.On<string, string>("Ayooo", (user, message) =>
+          {
+
+              var msg = $"{(string.IsNullOrEmpty(user) ? "" : user + ": ")} {message}";
+              messages += msg + "\n";
+              StateHasChanged();
+          });
+
+        await hubConnection.StartAsync();
+    }
+
+    private async Task Send()
+    {
+        if(hubConnection != null)
+        {
+            await hubConnection.SendAsync("AddMessageToChat", username, message);
+            message = string.Empty;
+        }
+    }
+
+    private async Task HandleInput(KeyboardEventArgs args)
+    {
+        if(args.Key.Equals("Enter"))
+        {
+            await Send();
+
+        }
+    }
+
+    public bool IsConnnected => hubConnection?.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        if(hubConnection != null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+
+    private async Task<string> GetUsernameClaim()
+    {
+        var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+        return authState.User.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+
+    }
+}

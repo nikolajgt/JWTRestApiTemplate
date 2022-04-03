@@ -8,7 +8,7 @@ using SignalRStreamingJson.Models;
 
 #nullable disable
 
-namespace SignalRStreamingJson.Migrations
+namespace SignalRStreaming.BL.Migrations
 {
     [DbContext(typeof(MyDbContext))]
     partial class MyDbContextModelSnapshot : ModelSnapshot
@@ -21,6 +21,54 @@ namespace SignalRStreamingJson.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
+
+            modelBuilder.Entity("SignalRStreaming.BL.Models.ChatFriends", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"), 1L, 1);
+
+                    b.Property<string>("UserAddedUserID")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("UserID")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("UserAddedUserID");
+
+                    b.HasIndex("UserID");
+
+                    b.ToTable("ChatFriends");
+                });
+
+            modelBuilder.Entity("SignalRStreaming.BL.Models.SignalR.ChatMessage", b =>
+                {
+                    b.Property<int>("ChatID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ChatID"), 1L, 1);
+
+                    b.Property<int?>("ChatFriendsID")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("MessageSent")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("ChatID");
+
+                    b.HasIndex("ChatFriendsID");
+
+                    b.ToTable("ChatMessage");
+                });
 
             modelBuilder.Entity("SignalRStreamingJson.Models.MockDataTable", b =>
                 {
@@ -69,6 +117,28 @@ namespace SignalRStreamingJson.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("SignalRStreaming.BL.Models.ChatFriends", b =>
+                {
+                    b.HasOne("SignalRStreamingJson.Models.User", "UserAdded")
+                        .WithMany()
+                        .HasForeignKey("UserAddedUserID");
+
+                    b.HasOne("SignalRStreamingJson.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserID");
+
+                    b.Navigation("User");
+
+                    b.Navigation("UserAdded");
+                });
+
+            modelBuilder.Entity("SignalRStreaming.BL.Models.SignalR.ChatMessage", b =>
+                {
+                    b.HasOne("SignalRStreaming.BL.Models.ChatFriends", null)
+                        .WithMany("ChatMessages")
+                        .HasForeignKey("ChatFriendsID");
+                });
+
             modelBuilder.Entity("SignalRStreamingJson.Models.User", b =>
                 {
                     b.OwnsMany("SignalRStreamingJson.Models.JWT.RefreshToken", "RefreshTokens", b1 =>
@@ -115,6 +185,11 @@ namespace SignalRStreamingJson.Migrations
                         });
 
                     b.Navigation("RefreshTokens");
+                });
+
+            modelBuilder.Entity("SignalRStreaming.BL.Models.ChatFriends", b =>
+                {
+                    b.Navigation("ChatMessages");
                 });
 #pragma warning restore 612, 618
         }

@@ -72,6 +72,16 @@ namespace SignalRStreamingJson.Controllers
             return new OkObjectResult(response);
         }
 
+        [HttpPost("Add-friend")]
+        public async Task<ActionResult> AddUserFriendList(string userid, string addeduserid)
+        {
+            var response = await _service.PostUserToFriendList(userid, addeduserid);
+            if (response == false)
+                return new NotFoundObjectResult(response);
+
+            return new OkObjectResult(response);
+        }
+
 
 
         //GETS
@@ -81,6 +91,16 @@ namespace SignalRStreamingJson.Controllers
         {
             var response = await _service.GetUserAsync(userid);
             if(response == null)
+                return new NotFoundObjectResult(response);
+
+            return new OkObjectResult(response);
+        }
+
+        [HttpGet("Get-Messages")]
+        public async Task<ActionResult> GetMessages(int id)
+        {
+            var response = await _service.GetMessagesAsync(id);
+            if (response == null)
                 return new NotFoundObjectResult(response);
 
             return new OkObjectResult(response);
