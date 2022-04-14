@@ -6,8 +6,11 @@ namespace SignalRStreaming.BL.Models.SignalR
     {
         [Key]
         public int ChatID { get; set; }
+        public string Username { get; set; }
         public DateTime MessageSent { get; set; }
         public string Message { get; set; }
+        public string UserID { get; set; }
+        public virtual AppUser Sender { get; set; }
 
         public ChatMessage(string message)
         {
@@ -16,3 +19,4 @@ namespace SignalRStreaming.BL.Models.SignalR
         }
     }
 }
+ 

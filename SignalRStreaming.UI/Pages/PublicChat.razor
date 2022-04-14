@@ -1,4 +1,4 @@
-﻿@page "/chat"
+﻿@page "/PublicChat"
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
 @implements IAsyncDisposable
@@ -18,6 +18,20 @@
                         <p class="text-black">Shamasdasdse</p>
                     </li>
                 </ul>
+            </div>
+            <div class="container-fluid">
+                <label>Public Messages</label>
+                <textarea style="width: 100%; height: 500px;">
+                    @messages
+                </textarea>
+                <div class="input-group">
+                    <input @bind-value="message"
+                            @bind-value:event="oninput"
+                            @onkeyup="HandleInput"
+                            class="form-control">
+                    <button class="btn btn-primary form-group-append"
+                            @onclick="SendPublic">Send</button>
+                </div>
             </div>
             <div class="container-fluid">
                 <label>Private Messages</label>
@@ -43,6 +57,7 @@
 
 
 @code {
+    private HubConnection? connPublicChat;
     private HubConnection? connPrivatChat;
     private string messages = string.Empty;
     private string username = string.Empty;
@@ -51,6 +66,10 @@
 
     protected override async Task OnInitializedAsync()
     {
+        //connPublicChat = new HubConnectionBuilder()
+        //    .WithUrl("https://localhost:44318/chathub")
+        //    .Build();
+
         connPrivatChat = new HubConnectionBuilder()
             .WithUrl("https://localhost:44318/privatechathub")
             .Build();
@@ -58,11 +77,30 @@
 
         username = await GetUsernameClaim();
 
+        connPublicChat.On<string, string>("Ayooo", (user, message) =>
+          {
+              var msg = $"{(string.IsNullOrEmpty(user) ? "" : user + ": ")} {message}";
+              messages += msg + "\n";
+              StateHasChanged();
+          });
 
-        await connPrivatChat.StartAsync();
+
+
+        //var id = connPrivatChat.ConnectionId;
+
+        //await JS.InvokeVoidAsync("console.log", id);
+
+        await connPublicChat.StartAsync();
     }
 
-
+    private async Task SendPublic()
+    {
+        if(connPublicChat != null)
+        {
+            await connPublicChat.SendAsync("AddMessageToChat", username, message);
+            message = string.Empty;
+        }
+    }
 
     private async Task GetConnectionID(string connectionid)
     {
@@ -85,15 +123,21 @@
     {
         if(args.Key.Equals("Enter"))
         {
+            await SendPublic();
             await PrivatSend();
 
         }
     }
 
-    public bool IsConnnected => connPrivatChat?.State == HubConnectionState.Connected;
+    public bool IsConnnected => connPublicChat?.State == HubConnectionState.Connected;
 
     public async ValueTask DisposeAsync()
     {
+        if(connPublicChat != null)
+        {
+            await connPublicChat.DisposeAsync();
+        }
+
         if(connPrivatChat != null)
         {
             await connPrivatChat.DisposeAsync();
@@ -104,5 +148,6 @@
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
         return authState.User.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+
     }
 }

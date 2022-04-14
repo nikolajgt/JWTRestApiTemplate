@@ -19,6 +19,7 @@ namespace SignalRStreaming.BL.Hubs
             await base.OnConnectedAsync();
         }
 
+        [HubMethodName("AddMessageToChat")]
         public async Task AddMessageToChat(string user, string message)
         {
             await Clients.All.SendAsync("Ayooo", user, message);
