@@ -20,13 +20,18 @@ namespace SignalRStreaming.UI.Extensions
         {
             string token = await GetTokenAsync();
             var identity = new ClaimsIdentity();
+            var anonymousState = new AuthenticationState(new ClaimsPrincipal(new ClaimsIdentity()));
 
             if (!string.IsNullOrEmpty(token))
                 identity = new ClaimsIdentity(ParseClaimsFromJwt(token), "jwt");
 
-            //var jwtExpire = identity.Claims.FirstOrDefault(c => c.Type == "exp");
-            //var datetime = DateTimeOffset.FromUnixTimeSeconds((long)Convert.ToDouble(jwtExpire.Value));
-            //if (datetime.UtcDateTime <= DateTime.UtcNow)
+            var jwtExpire = identity.Claims.FirstOrDefault(c => c.Type == "exp");
+            if (jwtExpire != null)
+            {
+                var datetime = DateTimeOffset.FromUnixTimeSeconds((long)Convert.ToDouble(jwtExpire.Value));
+                if (datetime.UtcDateTime <= DateTime.UtcNow)
+                    return anonymousState;
+            }
 
 
             var user = new ClaimsPrincipal(identity);

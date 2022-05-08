@@ -12,8 +12,10 @@ namespace SignalRStreamingJson.Interfaces
         Task<bool> AddFriendAsync(ChatFriends chatfriend);
 
         //Get
-        Task<User> GetUserAsync(string id);
+        Task<User> GetUserAsyncByID(string id);
+        Task<User> GetUserAsyncByUsername(string username);
         Task<ChatFriends> GetChatFriendsAsync(int id);
+
 
         //Updates
         Task<bool> UpdateCustomerAsync(User user);

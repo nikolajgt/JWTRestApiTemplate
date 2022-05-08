@@ -33,20 +33,6 @@
                             @onclick="SendPublic">Send</button>
                 </div>
             </div>
-            <div class="container-fluid">
-                <label>Private Messages</label>
-                <textarea style="width: 100%; height: 500px;">
-                    @messages
-                </textarea>
-                <div class="input-group">
-                    <input @bind-value="message"
-                            @bind-value:event="oninput"
-                            @onkeyup="HandleInput"
-                            class="form-control">
-                    <button class="btn btn-primary form-group-append"
-                            @onclick="PrivatSend">Send</button>
-                </div>
-            </div>
      </div>
     </Authorized>
     <NotAuthorized>
@@ -58,7 +44,6 @@
 
 @code {
     private HubConnection? connPublicChat;
-    private HubConnection? connPrivatChat;
     private string messages = string.Empty;
     private string username = string.Empty;
     private string message = string.Empty;
@@ -66,29 +51,23 @@
 
     protected override async Task OnInitializedAsync()
     {
-        //connPublicChat = new HubConnectionBuilder()
-        //    .WithUrl("https://localhost:44318/chathub")
-        //    .Build();
 
-        connPrivatChat = new HubConnectionBuilder()
-            .WithUrl("https://localhost:44318/privatechathub")
+
+        connPublicChat = new HubConnectionBuilder()
+            .WithUrl("https://localhost:7057/publichub")
             .Build();
 
 
         username = await GetUsernameClaim();
 
         connPublicChat.On<string, string>("Ayooo", (user, message) =>
-          {
+        {
               var msg = $"{(string.IsNullOrEmpty(user) ? "" : user + ": ")} {message}";
               messages += msg + "\n";
               StateHasChanged();
-          });
+        });
 
 
-
-        //var id = connPrivatChat.ConnectionId;
-
-        //await JS.InvokeVoidAsync("console.log", id);
 
         await connPublicChat.StartAsync();
     }
@@ -102,29 +81,12 @@
         }
     }
 
-    private async Task GetConnectionID(string connectionid)
-    {
-        if(connPrivatChat != null)
-        {
-            await JS.InvokeVoidAsync("console.log", connectionid);
-        }
-    }
-
-    private async Task PrivatSend()
-    {
-        if(connPrivatChat != null)
-        {
-            await connPrivatChat.SendAsync("AddMessageToChat", username, message);
-            message = string.Empty;
-        }
-    }
 
     private async Task HandleInput(KeyboardEventArgs args)
     {
         if(args.Key.Equals("Enter"))
         {
             await SendPublic();
-            await PrivatSend();
 
         }
     }
@@ -138,10 +100,7 @@
             await connPublicChat.DisposeAsync();
         }
 
-        if(connPrivatChat != null)
-        {
-            await connPrivatChat.DisposeAsync();
-        }
+
     }
 
     private async Task<string> GetUsernameClaim()

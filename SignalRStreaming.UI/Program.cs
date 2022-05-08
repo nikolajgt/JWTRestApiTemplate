@@ -2,7 +2,7 @@ using Blazored.LocalStorage;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Authorization;
 using Microsoft.AspNetCore.Components.Web;
-
+using SignalRStreaming.BL.Models.SignalR;
 using SignalRStreaming.UI.Extensions;
 
 var builder = WebApplication.CreateBuilder(args);

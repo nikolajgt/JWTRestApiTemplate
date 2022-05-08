@@ -109,7 +109,15 @@ namespace SignalRStreamingJson.Controllers
 
         //UPDATES
 
+        [HttpPut("Add-friend")]
+        public async Task<ActionResult> AddPrivatFriend(string userid, string username)
+        {
+            var response = await _service.PostUserToFriendList(userid, username);
+            if (response == null)
+                return new NotFoundObjectResult(response);
 
+            return new OkObjectResult(response);
+        }
 
 
 

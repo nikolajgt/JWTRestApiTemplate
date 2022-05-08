@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace SignalRStreaming.BL.Models.SignalR
+namespace SignalRStreaming.UI.Models.SignalR
 {
     public class ChatMessage
     {
@@ -9,7 +9,7 @@ namespace SignalRStreaming.BL.Models.SignalR
         public string Username { get; set; }
         public DateTime MessageSent { get; set; }
         public string Message { get; set; }
-        //  public virtual AppUser Sender { get; set; }
+      //  public virtual AppUser Sender { get; set; }
 
         public ChatMessage(string username, string message)
         {

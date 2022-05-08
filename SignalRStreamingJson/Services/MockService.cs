@@ -34,10 +34,10 @@ namespace SignalRStreamingJson.Services
             return true;
         }
 
-        public async Task<bool> PostUserToFriendList(string userid, string addedUserid)
+        public async Task<bool> PostUserToFriendList(string userid, string username)
         {
-            var user = await _repository.GetUserAsync(userid);
-            var useradded = await _repository.GetUserAsync(addedUserid);
+            var user = await _repository.GetUserAsyncByID(userid);
+            var useradded = await _repository.GetUserAsyncByUsername(username);
 
             var newModel = new ChatFriends(user, useradded);
             return await _repository.AddFriendAsync(newModel);
@@ -49,7 +49,7 @@ namespace SignalRStreamingJson.Services
 
         public async Task<User> GetUserAsync(string userid)
         {
-            return await _repository.GetUserAsync(userid);
+            return await _repository.GetUserAsyncByID(userid);
         }
 
         public async Task<ChatFriends> GetMessagesAsync(int id)

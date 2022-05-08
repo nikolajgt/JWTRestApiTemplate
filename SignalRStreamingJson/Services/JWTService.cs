@@ -119,7 +119,7 @@ namespace SignalRStreamingJson.Services
 
         public async Task<User> GetCustomerByID(string id)
         {
-            return await _repository.GetUserAsync(id);
+            return await _repository.GetUserAsyncByID(id);
         }
     }
 }

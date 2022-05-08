@@ -1,6 +1,9 @@
 ﻿@page "/chat"
+@using SignalRStreaming.BL.Models.SignalR
+@using SignalRStreaming.UI.Models
 @inject NavigationManager NavigationManager
 @inject AuthenticationStateProvider AuthenticationStateProvider
+@using System.Text.Json;
 @implements IAsyncDisposable
 @inject IJSRuntime JS
 @attribute [Microsoft.AspNetCore.Authorization.Authorize]
@@ -21,14 +24,32 @@
             </div>
             <div class="container-fluid">
                 <label>Private Messages</label>
-                <textarea style="width: 100%; height: 500px;">
-                    @messages
+                <textarea readonly style="width: 100%; height: 500px;">
+                    @dispalyMessage
                 </textarea>
                 <div class="input-group">
-                    <input @bind-value="message"
+                    
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                           <span class="input-group-text" id="basic-addon1">My id: @user.ConnectionID</span>
+                        </div>
+                        <input @bind-value="message"
                             @bind-value:event="oninput"
+                            placeholder="Message"
                             @onkeyup="HandleInput"
                             class="form-control">
+                    </div>
+                    <div class="input-group mb-3">
+                        <div class="input-group-prepend">
+                           <span class="input-group-text" id="basic-addon1">Target Connectionid</span>
+                        </div>
+                        <input type="text" 
+                            class="form-control" 
+                            placeholder="Connectionid" 
+                            aria-label="Connectionid" 
+                            aria-describedby="basic-addon2"
+                            @bind-value="targetconnectionid">
+                    </div>
                     <button class="btn btn-primary form-group-append"
                             @onclick="PrivatSend">Send</button>
                 </div>
@@ -44,39 +65,65 @@
 
 @code {
     private HubConnection? connPrivatChat;
-    private string messages = string.Empty;
-    private string username = string.Empty;
+    private List<ChatMessage> messages = new List<ChatMessage>();
+    ChatMessage chatMessage = new ChatMessage();
+    private User user = new User();
+
+    private string dispalyMessage = string.Empty;
     private string message = string.Empty;
+    private string userid = string.Empty;
+    private string targetconnectionid = string.Empty;
 
 
     protected override async Task OnInitializedAsync()
     {
+        string accessTOken = await GetAccessToken();
+
         connPrivatChat = new HubConnectionBuilder()
-            .WithUrl("https://localhost:44318/privatechathub")
+            .WithUrl("https://localhost:7057/privatehub", opt =>
+            {
+                opt.AccessTokenProvider = () => Task.FromResult(accessTOken);
+            })
+            .ConfigureLogging(logging => {
+                logging.SetMinimumLevel(LogLevel.Debug);
+                logging.AddConsole();
+            })
+            .WithAutomaticReconnect()
             .Build();
 
+        userid = await GetUserIDClaim();
 
-        username = await GetUsernameClaim();
+
+
+        connPrivatChat.On<string>("ClientReciveUser", (u) =>
+        {
+            user = System.Text.Json.JsonSerializer.Deserialize<User>(u);
+            StateHasChanged();
+        });
+
+        connPrivatChat.On<string>("ClientReciveMessage", (m) =>
+        {
+            chatMessage = System.Text.Json.JsonSerializer.Deserialize<ChatMessage>(m);
+            var msg = $"{(string.IsNullOrEmpty(chatMessage.Username) ? "" : chatMessage.Username + ": ")} {chatMessage.Message}";
+            dispalyMessage += msg + "\n";
+            messages.Add(chatMessage);
+
+            StateHasChanged();
+        });
+
 
 
         await connPrivatChat.StartAsync();
+        await connPrivatChat.SendAsync("GetUserInformation", userid);
     }
 
 
-
-    private async Task GetConnectionID(string connectionid)
-    {
-        if(connPrivatChat != null)
-        {
-            await JS.InvokeVoidAsync("console.log", connectionid);
-        }
-    }
 
     private async Task PrivatSend()
     {
         if(connPrivatChat != null)
         {
-            await connPrivatChat.SendAsync("AddMessageToChat", username, message);
+            await connPrivatChat.SendAsync("SendPrivateMessage", user.Username, message, targetconnectionid);
             message = string.Empty;
         }
     }
@@ -100,9 +147,15 @@
         }
     }
 
-    private async Task<string> GetUsernameClaim()
+    private async Task<string> GetUserIDClaim()
     {
         var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
-        return authState.User.Claims.FirstOrDefault(c => c.Type == "sub")?.Value;
+        return authState.User.Claims.FirstOrDefault(c => c.Type == "name")?.Value;
+    }
+
+    //public string AccessToken => async () => await JS.InvokeAsync<string>("localStorage.getItem", "Token");
+    private async Task<string> GetAccessToken()
+    {
+        return await JS.InvokeAsync<string>("localStorage.getItem", "Token");
     }
 }

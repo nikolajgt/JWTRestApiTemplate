@@ -9,7 +9,7 @@ namespace SignalRStreamingJson.Interfaces
 
         //POST METHODS
         Task<bool> PostUserAsync(User user);
-        Task<bool> PostUserToFriendList(string userid, string addedUserid);
+        Task<bool> PostUserToFriendList(string userid, string username);
 
         //GET METHOD
         Task<User> GetUserAsync(string userid);

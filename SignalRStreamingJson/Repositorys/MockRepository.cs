@@ -43,9 +43,18 @@ namespace SignalRStreamingJson.Repositorys
         }
 
         //Get
-        public async Task<User> GetUserAsync(string id)
+        public async Task<User> GetUserAsyncByID(string id)
         {
             var response = await _db.Users.FirstOrDefaultAsync(x => x.UserID == id);
+            if (response == null)
+                return null;
+
+            return response;
+        }
+
+        public async Task<User> GetUserAsyncByUsername(string username)
+        {
+            var response = await _db.Users.FirstOrDefaultAsync(x => x.Username == username);
             if (response == null)
                 return null;
 

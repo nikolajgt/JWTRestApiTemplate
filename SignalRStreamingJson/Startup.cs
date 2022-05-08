@@ -9,7 +9,7 @@ namespace SignalRStreamingJson
     {
         public void Configure(IAppBuilder app)
         {
-            app.MapSignalR();
+            
         }
     }
 }

@@ -17,6 +17,7 @@ namespace SignalRStreaming.BL.Hubs
         {
             await AddMessageToChat("", "User connected!");
             await base.OnConnectedAsync();
+            var test = Context.GetHttpContext;
         }
 
         [HubMethodName("AddMessageToChat")]

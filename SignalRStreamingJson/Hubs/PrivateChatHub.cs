@@ -7,74 +7,73 @@ using System.Security.Claims;
 using Newtonsoft.Json;
 using System.Collections.Concurrent;
 using SignalRStreamingJson.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 
-namespace SignalRStreamingJson.Hubs
+namespace SignalRStreaming.BL.Hubs
 {
+    [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
     public class PrivateChatHub : Hub
     {
         private readonly IMockService _service;
-        private readonly IHttpContextAccessor _contextAccessor;
-        private readonly AppUser _appUser;
+        //private readonly AppUser _appUser;
         public static ConcurrentDictionary<string, User> MyUsers = new ConcurrentDictionary<string, User>();
-        public PrivateChatHub(IMockService service, IHttpContextAccessor contextAccessor, AppUser appUser)
+
+        public PrivateChatHub(IMockService service)
         {
             _service = service;
-            _contextAccessor = contextAccessor;
-            _appUser = appUser;
+
+            //_appUser = appUser;
         }
 
         //Overrided hub method that adds user to "online" dicionary
         //And send user data out for testing
         public override async Task OnConnectedAsync()
         {
-            MyUsers.TryAdd(Context.ConnectionId, new User() { ConnectionID = Context.ConnectionId });
-            PushData();
+            
             
             await base.OnConnectedAsync();
         }
 
-        //Overrided hub method that removes "online" user
-        public override async Task OnDisconnectedAsync(Exception ex)
+        public override async Task OnDisconnectedAsync(Exception exception)
         {
             User garbage;
-
             MyUsers.TryRemove(Context.ConnectionId, out garbage);
-
-            await base.OnDisconnectedAsync(ex);
+            await base.OnDisconnectedAsync(exception);
         }
 
-        public void PushData()
+        //When user have Connected, it immedialtly sends a request to get
+        //User object. That way its always updated when logged in.
+        //It also adds user to ConcurrentDicionary, so we can see whos online
+        public async Task GetUserInformation(string userid)
         {
-            Clients.Clients(MyUsers.Keys.ToList()).SendAsync("GetConnectionID", MyUsers.Keys.First());
+            var user = await _service.GetUserAsync(userid);
+            user.ConnectionID = Context.ConnectionId;
+            MyUsers.TryAdd(user.Username, user);
+
+            var userObjectJson = JsonConvert.SerializeObject(user);
+            await Clients.Client(Context.ConnectionId).SendAsync("ClientReciveUser", userObjectJson);
         }
 
-
-        //Method for sending the message to the selected user
-        public async Task PrivateSendMessage(int id, string targetconnectionid, string username, string message)
+        //Gets a username, message and targetUsername. Makes a message object
+        //And Serialized it. Then we search for username in MyUsers ( Dicionary )
+        //And sends its to the right target.
+        public async Task SendPrivateMessage(string username, string message, string targetUsername)
         {
-           // await Clients.Client(targetconnectionid).SendAsync("ReceiveMessageToUser", username, targetconnectionid, message);
-            await Clients.User(targetconnectionid).SendAsync("ReceiveMessageToUser", username, targetconnectionid, message);
+            var newMessageModel = new ChatMessage(username, message);
+            var NewMessageJson = JsonConvert.SerializeObject(newMessageModel);
 
-            var newModel = new ChatMessage(message);
-            var response = await _service.GetMessagesAsync(id);
-            response.ChatMessages.Add(newModel);
-            await _service.UpdateMessagesAsync(response);
+            var targetconnectionid = MyUsers.FirstOrDefault(x => x.Key == targetUsername).Value;
+            if(targetconnectionid != null)
+                await Clients.Client(targetconnectionid.ConnectionID).SendAsync("ClientReciveMessage", NewMessageJson);
         }
 
-        //Method for displaying the message for the user
-
-        public async Task PrivateReciveMessage(string id, string username, string message)
+        public async Task AddPrivatFriend(string username, string targetusername)
         {
-            await Clients.Caller.SendAsync("ReciveMessageToMe", username, message);
+
         }
 
-        public async Task InitializeChat(int id, string targetconnectionid)
-        {
-            var response = await _service.GetMessagesAsync(id);
-            var toJson = JsonConvert.SerializeObject(response);
-            await Clients.Client(targetconnectionid).SendAsync("InitializeChat", toJson);
-            
-        }
+
 
     }
 }

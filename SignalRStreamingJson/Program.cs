@@ -6,7 +6,6 @@ using Microsoft.OpenApi.Models;
 using Microsoft.Owin;
 using Owin;
 using SignalRStreaming.BL.Hubs;
-using SignalRStreamingJson.Hubs;
 using SignalRStreamingJson.Interfaces;
 using SignalRStreamingJson.Models;
 using SignalRStreamingJson.Repositorys;
@@ -63,6 +62,8 @@ builder.Services.AddAuthentication(x =>
 })
     .AddJwtBearer(x =>
     {
+        //x.Authority = "Authority URL";
+
         x.RequireHttpsMetadata = false;
         x.SaveToken = true;
         x.TokenValidationParameters = new TokenValidationParameters
@@ -72,9 +73,52 @@ builder.Services.AddAuthentication(x =>
             ValidateIssuer = false,
             ValidateAudience = false
         };
-    });
 
-builder.Services.AddSignalR();
+        x.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = context =>
+            {
+                var accessTokenResponse = context.HttpContext.Request.Headers["Authorization"].ToString();
+                if(String.IsNullOrEmpty(accessTokenResponse))
+                    return Task.CompletedTask;
+
+                var accessTokenSkippedFirst = string.Join(string.Empty, accessTokenResponse.Skip(8));
+                var finalAccessToken = accessTokenSkippedFirst.Remove(accessTokenSkippedFirst.Length - 1, 1);
+
+                var path = context.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(finalAccessToken) && path.StartsWithSegments("/privatehub"))
+                {
+                    context.Token = finalAccessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
+    });
+builder.Services.AddAuthorization();
+
+builder.Services.AddSignalR(opt =>
+{
+    opt.EnableDetailedErrors = true;
+
+});
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAllCors", builder =>
+    {
+        builder
+
+        .WithOrigins("https://localhost:7189", "http://localhost:5189")
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials()
+        .SetIsOriginAllowedToAllowWildcardSubdomains()
+        .SetIsOriginAllowed(delegate (string requestingOrigin)
+        {
+            return true;
+        }).Build();
+    });
+});
 builder.Services.AddResponseCompression(opt =>
     opt.MimeTypes = ResponseCompressionDefaults
     .MimeTypes
@@ -102,9 +146,10 @@ app.UseAuthentication();
 
 app.UseAuthorization();
 
+app.MapHub<PublicChatHub>("/publichub");
+app.MapHub<PrivateChatHub>("/privatehub");
 
-app.MapHub<PublicChatHub>("/chathub");
-app.MapHub<PrivateChatHub>("/privatechathub");
+
 
 app.MapControllers();
 
